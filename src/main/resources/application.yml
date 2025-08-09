@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: events
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      # group-id is set programmatically to a per-instance unique value
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+app:
+  # STOMP WebSocket topic destinations
+  ws:
+    base: /topic
+  # Kafka topics
+  kafka:
+    topics:
+      updated: case.updated
+      created: case.created
+  # Instance id
+  instance-id: "${APP_INSTANCE_ID:${HOSTNAME:local}-${random.uuid}}"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
