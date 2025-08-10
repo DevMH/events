@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WebSocket STOMP Client</title>
+    <style>
+        :root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; color-scheme: light dark; }
+        body { margin: 0; padding: 24px; }
+        .card { max-width: 840px; margin: 0 auto; padding: 20px; border-radius: 16px; box-shadow: 0 2px 20px rgba(0,0,0,.08); }
+        .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        label { font-weight: 600; }
+        input[type="text"], select { padding: 8px 10px; border-radius: 10px; border: 1px solid #9993; min-width: 280px; }
+        button { padding: 10px 14px; border-radius: 12px; border: 0; cursor: pointer; box-shadow: 0 1px 8px rgba(0,0,0,.08); }
+        button.primary { background: #2563eb; color: white; }
+        button.secondary { background: #e5e7eb; }
+        .pill { display: inline-flex; align-items: center; gap: 8px; background: #f3f4f6; padding: 8px 12px; border-radius: 999px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+        .muted { opacity: .7; font-size: .9rem; }
+        .logbox { margin-top: 16px; padding: 12px; border-radius: 12px; background: #1111; max-height: 260px; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+    </style>
+    <!-- CDN libs -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <script>
+        // Fallback loader for older global if @stomp/stompjs fails to attach
+        if (!window.StompJs) {
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js';
+            document.head.appendChild(s);
+        }
+    </script>
+</head>
+<body>
+<div class="card">
+    <h1>WebSocket STOMP Client</h1>
+    <p class="muted">Connect to one of your Spring Boot instances and subscribe to case events. All received frames are printed to the <strong>browser console</strong> and mirrored below.</p>
+
+    <div class="row" style="margin-top: 12px; gap: 16px;">
+        <div>
+            <label for="serverUrl">Server URL</label><br />
+            <input id="serverUrl" type="text" value="http://localhost:8081" placeholder="http://host:port" />
+        </div>
+        <div>
+            <label for="wsEndpoint">WebSocket endpoint</label><br />
+            <input id="wsEndpoint" type="text" value="/ws" />
+        </div>
+        <div style="align-self:flex-end; display:flex; gap:8px;">
+            <button class="primary" id="btnConnect">Connect</button>
+            <button class="secondary" id="btnDisconnect" disabled>Disconnect</button>
+        </div>
+    </div>
+
+    <h3 style="margin-top: 20px;">Topics</h3>
+    <div class="grid">
+        <label class="pill"><input type="checkbox" class="topic" value="/topic/case/created" checked> /topic/case/created</label>
+        <label class="pill"><input type="checkbox" class="topic" value="/topic/case/updated" checked> /topic/case/updated</label>
+    </div>
+
+    <div class="row" style="margin-top: 16px; gap: 8px;">
+        <button id="btnSubscribe" class="secondary" disabled>Subscribe Selected</button>
+        <button id="btnUnsubscribe" class="secondary" disabled>Unsubscribe All</button>
+        <span class="muted" id="status">Disconnected</span>
+    </div>
+
+    <div class="logbox" id="log"></div>
+</div>
+
+<script>
+    // Global client
+    let client = null;
+    const activeSubs = new Map(); // destination -> subscription object
+
+    const $ = (id) => document.getElementById(id);
+    const logBox = $("log");
+    const statusEl = $("status");
+
+    function makeClient(sock) {
+        // Prefer modern @stomp/stompjs
+        if (window.StompJs && window.StompJs.Client) {
+            return new window.StompJs.Client({
+                webSocketFactory: () => sock,
+                reconnectDelay: 5000,
+                onConnect: () => { setConnected(true); print('STOMP connected'); },
+                onStompError: (frame) => print('STOMP error:', frame.headers?.message, frame.body),
+                onWebSocketClose: (evt) => { setConnected(false); print('WebSocket closed:', { code: evt.code, reason: evt.reason }); },
+                onWebSocketError: (evt) => print('WebSocket error:', evt)
+            });
+        }
+        // Fallback to legacy stompjs v2 global
+        if (window.Stomp && window.Stomp.over) {
+            const client = window.Stomp.over(sock);
+            client.debug = null;
+            return {
+                active: true,
+                subscribe: (dest, fn) => client.subscribe(dest, fn),
+                activate: () => client.connect({}, () => { setConnected(true); print('STOMP connected (legacy)'); }, (e) => print('STOMP error:', e)),
+                deactivate: () => client.disconnect(() => setConnected(false))
+            };
+        }
+        throw new Error('STOMP libraries not available');
+    }
+
+    function print(...args) {
+        console.log(...args);
+        const line = document.createElement('div');
+        line.textContent = args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function setConnected(connected) {
+        $("btnConnect").disabled = connected;
+        $("btnDisconnect").disabled = !connected;
+        $("btnSubscribe").disabled = !connected;
+        $("btnUnsubscribe").disabled = !connected;
+        statusEl.textContent = connected ? "Connected" : "Disconnected";
+    }
+
+    function getSelectedTopics() {
+        return Array.from(document.querySelectorAll('.topic:checked')).map(c => c.value);
+    }
+
+    function buildWsUrl(base, endpoint) {
+        // Normalize to absolute ws URL for SockJS factory
+        const url = new URL(base);
+        return `${url.protocol}//${url.host}${endpoint}`; // SockJS will handle http/https
+    }
+
+    function connect() {
+        const base = $("serverUrl").value.trim();
+        const endpoint = $("wsEndpoint").value.trim() || "/ws";
+
+        const wsUrl = buildWsUrl(base, endpoint);
+        print("Connecting to", wsUrl);
+
+        // Construct SockJS and STOMP Client
+        const sock = new SockJS(wsUrl);
+        try {
+            client = makeClient(sock);
+            client.activate();
+        } catch (e) {
+            print('Failed to initialize STOMP:', e.message);
+            alert('Failed to load STOMP libraries. Check your network or ad blocker.');
+        }
+    }
+
+    function disconnect() {
+        if (client) {
+            print("Disconnecting…");
+            try { client.deactivate(); } catch {}
+            client = null;
+        }
+        activeSubs.clear();
+        setConnected(false);
+    }
+
+    function subscribeSelected() {
+        if (!client || !client.active) { print("Not connected"); return; }
+        const topics = getSelectedTopics();
+        for (const dest of topics) {
+            if (activeSubs.has(dest)) continue; // already subscribed
+            const sub = client.subscribe(dest, (msg) => {
+                // Print to browser console and mirror to page
+                try {
+                    const body = JSON.parse(msg.body);
+                    print("Message @", dest, body);
+                } catch (e) {
+                    print("Message @", dest, msg.body);
+                }
+            });
+            activeSubs.set(dest, sub);
+            print("Subscribed:", dest);
+        }
+    }
+
+    function unsubscribeAll() {
+        for (const [dest, sub] of activeSubs.entries()) {
+            try { sub.unsubscribe(); } catch {}
+            print("Unsubscribed:", dest);
+        }
+        activeSubs.clear();
+    }
+
+    $("btnConnect").addEventListener("click", connect);
+    $("btnDisconnect").addEventListener("click", disconnect);
+    $("btnSubscribe").addEventListener("click", subscribeSelected);
+    $("btnUnsubscribe").addEventListener("click", unsubscribeAll);
+
+    // Convenience: auto-connect if running on the same host that serves the client
+    // (You can comment this out if you prefer manual.)
+    // document.addEventListener('DOMContentLoaded', () => {
+    //   connect();
+    //   setTimeout(subscribeSelected, 1500);
+    // });
+</script>
+</body>
+</html>
