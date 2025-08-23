@@ -22,12 +22,24 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
-    compileOnly 'org.projectlombok:lombok:1.18.30'
+    //compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     implementation 'org.projectlombok:lombok:1.18.30'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    //testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0' // Or the latest version
+    //testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0' // Or the latest version
+    //testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.0' // Optional, for parameterized tests
+
+    testImplementation 'org.projectlombok:lombok:1.18.30'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-websocket'
+    testImplementation 'org.springframework:spring-messaging'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 repositories {

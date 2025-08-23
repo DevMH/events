@@ -2,12 +2,14 @@ package com.devmh.messaging.events;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.springframework.context.ApplicationEvent;
 
 import java.time.Instant;
 
 @Getter
 @Setter
+@ToString
 public class CaseCreated extends ApplicationEvent {
 
     private final String caseId;

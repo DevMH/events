@@ -44,7 +44,10 @@ public class EventBus {
         AppEventType type = AppEventType.fromTopic(topic);
         String destination = type != null ? type.destination : wsBase + "/generic";
         log.info("Event bus fanning out to subscribed WebSockets: topic={}, message={}, destination={}", topic, envelope, destination);
-        ws.convertAndSend(destination, envelope);
+        //ws.convertAndSend(destination, envelope);
+        ws.convertAndSend("/topic/case/created", envelope);
+        //ws.convertAndSend("/topic/case/created", "test case created");
+        log.info("Fan-out complete");
     }
 
     @EventListener
