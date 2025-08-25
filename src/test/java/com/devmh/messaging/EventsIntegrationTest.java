@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "case.updated", "case.created"
 })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Profile("test")
 class EventsIntegrationTest {
 
     @LocalServerPort

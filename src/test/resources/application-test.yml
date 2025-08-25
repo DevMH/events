@@ -1,0 +1,12 @@
+logging:
+  level:
+      org.springframework.web.socket: DEBUG
+      org.springframework.web.socket.messaging: DEBUG
+      org.springframework.messaging.simp: DEBUG
+
+#2025-08-25T19:45:45.729-04:00  INFO 163312 --- [events] [    Test worker] c.devmh.messaging.EventsIntegrationTest  : Stomp Client created in setup
+#2025-08-25T19:45:45.797-04:00  INFO 163312 --- [events] [o-auto-1-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+#2025-08-25T19:45:45.797-04:00  INFO 163312 --- [events] [o-auto-1-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+#2025-08-25T19:45:45.798-04:00  INFO 163312 --- [events] [o-auto-1-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+
+#ws://localhost:{port}/myapp/ws (native) or http://localhost:{port}/myapp/ws (SockJS).
