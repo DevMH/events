@@ -69,6 +69,7 @@ class EventsIntegrationTest {
         List<Transport> transports = List.of(new WebSocketTransport(new StandardWebSocketClient()));
         SockJsClient sockJsClient = new SockJsClient(transports);
         stompClient = new WebSocketStompClient(sockJsClient);
+        // stompClient = new WebSocketStompClient(new StandardWebSocketClent());
         stompClient.setMessageConverter(new org.springframework.messaging.converter.StringMessageConverter());
         // Jackson is not required on client; we read frames as Strings
         stompClient.setInboundMessageSizeLimit(256 * 1024);
