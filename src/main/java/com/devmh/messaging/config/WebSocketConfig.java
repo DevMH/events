@@ -1,5 +1,7 @@
 package com.devmh.messaging.config;
 
+import com.devmh.messaging.interceptors.WsHandshakeHandler;
+import com.devmh.messaging.interceptors.WsHandshakeInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
@@ -19,8 +21,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // Browser connects here (e.g., ws://host:port/ws) and then uses STOMP
-        registry.addEndpoint("/ws").setAllowedOriginPatterns("*").withSockJS();
-        registry.addEndpoint("/ws").setAllowedOriginPatterns("*");
+        registry.addEndpoint("/ws")
+                .addInterceptors(new WsHandshakeInterceptor())
+                .setHandshakeHandler(new WsHandshakeHandler())
+                .setAllowedOriginPatterns("*")
+                .withSockJS();
+        registry.addEndpoint("/ws")
+                .addInterceptors(new WsHandshakeInterceptor())
+                .setHandshakeHandler(new WsHandshakeHandler())
+                .setAllowedOriginPatterns("*");
     }
 
     @Override
@@ -31,6 +40,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientOutboundChannel(ChannelRegistration reg) {
+        // add auth check interceptor
         reg.interceptors(new ChannelInterceptor() {
             final Logger log = LoggerFactory.getLogger("WsOutbound");
 
