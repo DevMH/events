@@ -1,0 +1,3 @@
+com.devmh.messaging_starter.starter.EventBusAutoConfiguration
+com.devmh.messaging_starter.starter.WebSocketAutoConfiguration
+com.acme.bus.starter.KafkaAutoConfiguration
