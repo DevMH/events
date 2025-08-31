@@ -23,7 +23,7 @@ import static org.springframework.kafka.support.KafkaHeaders.RECEIVED_TOPIC;
 public class EventBus {
 
     private final SimpMessagingTemplate ws;
-    private final KafkaTemplate<String, Object> kafka;
+    private final KafkaTemplate<String, EventEnvelope> kafka;
 
     // Kafka topics
     @Value("${app.kafka.topics.updated}")
@@ -38,15 +38,13 @@ public class EventBus {
 
     @KafkaListener(topicPattern = "case\\..*", containerFactory = "kafkaListenerContainerFactory")
     public void onEvent(@Header(RECEIVED_TOPIC) String topic,
-                        @Payload String envelope) {
+                        @Payload EventEnvelope envelope) {
         log.info("Event bus received Kafka event: {} from topic: {}", envelope, topic);
-        log.info("Event bus Kafka topic: {}", topic);
         AppEventType type = AppEventType.fromTopic(topic);
-        String destination = type != null ? type.destination : wsBase + "/generic";
+        // String destination = type != null ? type.destination : wsBase + "/generic";
+        String destination = "/topic/case/created";
         log.info("Event bus fanning out to subscribed WebSockets: topic={}, message={}, destination={}", topic, envelope, destination);
-        //ws.convertAndSend(destination, envelope);
-        ws.convertAndSend("/topic/case/created", envelope);
-        //ws.convertAndSend("/topic/case/created", "test case created");
+        ws.convertAndSend(destination, envelope);
         log.info("Fan-out complete");
     }
 
@@ -64,6 +62,6 @@ public class EventBus {
 
     private void publish(String topic, Object payload) {
         log.info("Event bus publishing event: {} to Kafka topic: {}", payload, topic);
-        kafka.send(topic, EventEnvelope.of(topic, payload).toString());
+        kafka.send(topic, EventEnvelope.of(topic, payload));
     }
 }

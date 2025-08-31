@@ -1,12 +1,11 @@
 package com.devmh.messaging;
 
 import com.devmh.messaging.events.CaseCreated;
+import com.devmh.messaging.events.EventEnvelope;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,6 +13,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -27,6 +27,7 @@ import org.springframework.web.socket.sockjs.client.Transport;
 import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
 import java.lang.reflect.Type;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -51,6 +52,9 @@ class EventsIntegrationTest {
     @Autowired
     TestRestTemplate rest;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private WebSocketStompClient stompClient;
 
     @DynamicPropertySource
@@ -69,9 +73,7 @@ class EventsIntegrationTest {
         List<Transport> transports = List.of(new WebSocketTransport(new StandardWebSocketClient()));
         SockJsClient sockJsClient = new SockJsClient(transports);
         stompClient = new WebSocketStompClient(sockJsClient);
-        // stompClient = new WebSocketStompClient(new StandardWebSocketClent());
-        stompClient.setMessageConverter(new org.springframework.messaging.converter.StringMessageConverter());
-        // Jackson is not required on client; we read frames as Strings
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter(objectMapper));
         stompClient.setInboundMessageSizeLimit(256 * 1024);
         log.info("Stomp Client created in setup");
     }
@@ -85,10 +87,14 @@ class EventsIntegrationTest {
     }
 
     private StompSession connect() throws Exception {
-        String url = String.format("ws://localhost:%d/ws", port);
-        StompSession fut = stompClient.connectAsync(url, new StompSessionHandlerAdapter() {}).get(10, TimeUnit.SECONDS);
-        log.info("Stomp Client connected, returning session: {}", fut);
-        return fut;
+        String url = String.format("http://localhost:%d/ws", port);
+        return stompClient.connectAsync(url, new StompSessionHandlerAdapter() {
+            @Override
+            public void handleException(StompSession session, StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
+                throw new RuntimeException("Failure in WebSocket handling", exception);
+            }
+        })
+        .get(10, TimeUnit.SECONDS);
     }
 
     private static class CollectingHandler implements StompFrameHandler {
@@ -100,7 +106,7 @@ class EventsIntegrationTest {
         }
 
         @Override public Type getPayloadType(StompHeaders headers) {
-            return String.class;
+            return EventEnvelope.class;
         }
 
         @Override public void handleFrame(StompHeaders headers, Object payload) {
@@ -120,16 +126,20 @@ class EventsIntegrationTest {
 
     private record Duo(CollectingHandler a, CollectingHandler b) {}
 
+    @SneakyThrows
     private Duo subscribeTwo(StompSession s1, StompSession s2, String destination) {
+
         CollectingHandler h1 = new CollectingHandler(1);
         CollectingHandler h2 = new CollectingHandler(1);
-        s1.subscribe(destination, h1);
-        s2.subscribe(destination, h2);
+
+        StompSession.Subscription sub1 = s1.subscribe("/topic/case/created", h1);
+        StompSession.Subscription sub2 = s2.subscribe("/topic/case/created", h2);
+
         return new Duo(h1, h2);
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(15)
     void shouldFanOutForInternalPublisher() throws Exception {
         // Two independent WS clients
         StompSession s1 = connect();
@@ -142,8 +152,8 @@ class EventsIntegrationTest {
             publisher.publishEvent(new CaseCreated(this, "CASE-1", java.time.Instant.now()));
 
             // Both clients must receive
-            boolean ok1 = duo.a.await(10, TimeUnit.SECONDS);
-            boolean ok2 = duo.b.await(10, TimeUnit.SECONDS);
+            boolean ok1 = duo.a.await(5, TimeUnit.SECONDS);
+            boolean ok2 = duo.b.await(5, TimeUnit.SECONDS);
             assertThat(ok1).as("client 1 received frame").isTrue();
             assertThat(ok2).as("client 2 received frame").isTrue();
 
@@ -157,7 +167,7 @@ class EventsIntegrationTest {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(15)
     void shouldFanOutForControllerPost() throws Exception {
         StompSession s1 = connect();
         StompSession s2 = connect();
@@ -169,8 +179,8 @@ class EventsIntegrationTest {
             String url = String.format("http://localhost:%d/api/events/create/CASE-2", port);
             rest.postForEntity(url, null, Void.class);
 
-            boolean ok1 = duo.a.await(10, TimeUnit.SECONDS);
-            boolean ok2 = duo.b.await(10, TimeUnit.SECONDS);
+            boolean ok1 = duo.a.await(5, TimeUnit.SECONDS);
+            boolean ok2 = duo.b.await(5, TimeUnit.SECONDS);
             assertThat(ok1).as("client 1 received frame").isTrue();
             assertThat(ok2).as("client 2 received frame").isTrue();
 

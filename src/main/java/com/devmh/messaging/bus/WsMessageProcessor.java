@@ -2,6 +2,7 @@ package com.devmh.messaging.bus;
 
 import com.devmh.messaging.events.AppEventType;
 import com.devmh.messaging.events.EventEnvelope;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.*;
 import org.apache.camel.component.kafka.KafkaConstants;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -10,6 +11,7 @@ import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.stereotype.Component;
 import java.security.Principal;
 
+@Slf4j
 @Component("wsMessageProcessor")
 public class WsMessageProcessor implements Processor {
     private final SimpMessagingTemplate ws;
@@ -22,7 +24,9 @@ public class WsMessageProcessor implements Processor {
 
     @Override
     public void process(Exchange exchange) {
+        log.warn("PROCESSING THE MESSAGE");
         EventEnvelope env = exchange.getIn().getBody(EventEnvelope.class);
+        log.warn("PROCESSING ENVELOPE: {}", env);
         String topic = exchange.getIn().getHeader(KafkaConstants.TOPIC, String.class);
         AppEventType type = AppEventType.fromTopic(topic);
 

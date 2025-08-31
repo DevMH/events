@@ -46,7 +46,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
             @Override
             public Message<?> preSend(Message<?> m, MessageChannel c) {
-                log.info("WS OUT {}", m.getHeaders().get("simpDestination"));
+                log.info("WS OUT {} {} {}", m, m.getHeaders().get("simpDestination"), c);
                 return m;
             }
         });
