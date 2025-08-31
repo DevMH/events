@@ -11,15 +11,6 @@ import java.util.concurrent.ConcurrentMap;
 @Component
 public class WsSessionRegistry {
 
-    public static final class SessionInfo {
-        public final String sessionId;
-        public final String userName;
-        public final Map<String, Object> attrs;
-        public SessionInfo(String sessionId, String userName, Map<String,Object> attrs) {
-            this.sessionId = sessionId; this.userName = userName; this.attrs = attrs;
-        }
-    }
-
     private final ConcurrentMap<String, SessionInfo> bySession = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Set<String>> sessionsByUser = new ConcurrentHashMap<>();
 
@@ -30,9 +21,9 @@ public class WsSessionRegistry {
     public void remove(String sessionId) {
         SessionInfo info = bySession.remove(sessionId);
         if (info != null) {
-            var set = sessionsByUser.getOrDefault(info.userName, Set.of());
+            var set = sessionsByUser.getOrDefault(info.userName(), Set.of());
             set.remove(sessionId);
-            if (set.isEmpty()) sessionsByUser.remove(info.userName);
+            if (set.isEmpty()) sessionsByUser.remove(info.userName());
         }
     }
     public Set<String> sessionsOf(String user) {

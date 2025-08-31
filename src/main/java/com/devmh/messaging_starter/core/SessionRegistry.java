@@ -1,9 +1,13 @@
 package com.devmh.messaging_starter.core;
 
+import org.springframework.stereotype.Component;
+
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Component
 public class SessionRegistry {
     private final Map<String, SessionInfo> bySession = new ConcurrentHashMap<>();
     private final Map<String, java.util.Set<String>> sessionsByUser = new ConcurrentHashMap<>();
@@ -27,7 +31,7 @@ public class SessionRegistry {
         return sessionsByUser.getOrDefault(user, java.util.Set.of());
     }
 
-    public java.util.Optional<SessionInfo> get(String sessionId) {
-        return java.util.Optional.ofNullable(bySession.get(sessionId));
+    public Optional<SessionInfo> get(String sessionId) {
+        return Optional.ofNullable(bySession.get(sessionId));
     }
 }

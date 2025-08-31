@@ -1,5 +1,6 @@
 package com.devmh.messaging.interceptors;
 
+import lombok.NonNull;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
@@ -11,16 +12,16 @@ import java.util.Map;
 @Component
 public class WsHandshakeHandler extends DefaultHandshakeHandler {
     @Override
-    protected Principal determineUser(ServerHttpRequest req,
-                                      WebSocketHandler handler,
-                                      Map<String, Object> attrs) {
+    protected Principal determineUser(@NonNull ServerHttpRequest req,
+                                      @NonNull WebSocketHandler handler,
+                                      @NonNull Map<String, Object> attrs) {
         // If Spring Security already set a user, keep it
         Principal p = super.determineUser(req, handler, attrs);
         if (p != null) return p;
 
         String dn = (String) attrs.get("pki_dn");
         if (dn != null) {
-            return () -> dn; // very simple Principal; replace with an Authentication if desired
+            return () -> dn;
         }
         return null;
     }

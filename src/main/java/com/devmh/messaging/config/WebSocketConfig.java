@@ -2,6 +2,7 @@ package com.devmh.messaging.config;
 
 import com.devmh.messaging.interceptors.WsHandshakeHandler;
 import com.devmh.messaging.interceptors.WsHandshakeInterceptor;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
@@ -45,7 +46,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             final Logger log = LoggerFactory.getLogger("WsOutbound");
 
             @Override
-            public Message<?> preSend(Message<?> m, MessageChannel c) {
+            public Message<?> preSend(@NonNull Message<?> m, @NonNull MessageChannel c) {
                 log.info("WS OUT {} {} {}", m, m.getHeaders().get("simpDestination"), c);
                 return m;
             }

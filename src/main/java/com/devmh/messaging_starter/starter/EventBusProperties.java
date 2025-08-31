@@ -11,9 +11,7 @@ public class EventBusProperties {
     private String groupId = "${HOSTNAME:local}-${random.uuid}";
     private Map<String,String> topics = Map.of(
             "created", "case.created",
-            "updated", "case.updated",
-            "locked", "case.locked",
-            "unlocked","case.unlocked"
+            "updated", "case.updated"
     );
     private String wsEndpoint = "/ws";
     private boolean sockJs = true;

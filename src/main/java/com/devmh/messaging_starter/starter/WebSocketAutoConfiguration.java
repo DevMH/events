@@ -35,7 +35,7 @@ public class WebSocketAutoConfiguration implements WebSocketMessageBrokerConfigu
     }
 
     @Override public void registerStompEndpoints(StompEndpointRegistry registry) {
-        var ep = registry.addEndpoint(props.getWsEndpoint()).setAllowedOriginPatterns("*");
+        registry.addEndpoint(props.getWsEndpoint()).setAllowedOriginPatterns("*");
         if (props.isSockJs()) registry.addEndpoint(props.getWsEndpoint()).setAllowedOriginPatterns("*").withSockJS();
     }
     @Override public void configureMessageBroker(MessageBrokerRegistry reg) {

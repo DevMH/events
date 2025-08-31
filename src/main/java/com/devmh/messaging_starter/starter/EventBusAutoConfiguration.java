@@ -11,6 +11,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 @AutoConfiguration
 @EnableConfigurationProperties(EventBusProperties.class)
 public class EventBusAutoConfiguration {
+
     @Bean @ConditionalOnMissingBean
     FanoutAuthorization fanoutAuthorization() {
         return (principal, event) -> true;

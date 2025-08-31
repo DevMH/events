@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.component.kafka.KafkaConstants;
-import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +23,7 @@ public class Routes extends RouteBuilder {
     public void configure() {
         JacksonDataFormat jsonFormat = new JacksonDataFormat();
         jsonFormat.setObjectMapper(objectMapper);
-/*
+
         from("seda:app-events")
                 .routeId("app-events-to-kafka")
                 .process(ex -> {
@@ -42,6 +41,6 @@ public class Routes extends RouteBuilder {
                 .unmarshal(jsonFormat)
                 .to("log:com.devmh.messaging.camel?showAll=true")
                 .process("wsMessageProcessor");
-*/
     }
+
 }

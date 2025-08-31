@@ -1,8 +1,9 @@
 package com.devmh.messaging;
 
-import com.devmh.messaging.events.CaseCreated;
+import com.devmh.messaging.events.CaseUpdated;
 import com.devmh.messaging.events.EventEnvelope;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
@@ -58,12 +59,9 @@ class EventsIntegrationTest {
 
     @DynamicPropertySource
     static void kafkaProps(DynamicPropertyRegistry registry) {
-        // Point the app under test at the embedded Kafka broker
         registry.add("spring.kafka.bootstrap-servers",
                 () -> System.getProperty("spring.embedded.kafka.brokers"));
-        // Ensure per-test unique consumer group
         registry.add("app.instance-id", () -> "test-" + UUID.randomUUID());
-        // Keep logs quieter
         registry.add("logging.level.org.springframework.kafka", () -> "WARN");
     }
 
@@ -89,7 +87,8 @@ class EventsIntegrationTest {
         String url = String.format("http://localhost:%d/ws", port);
         return stompClient.connectAsync(url, new StompSessionHandlerAdapter() {
             @Override
-            public void handleException(StompSession session, StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
+            public void handleException(@NonNull StompSession session, StompCommand command,
+                                        @NonNull StompHeaders headers, byte[] payload, @NonNull Throwable exception) {
                 throw new RuntimeException("Failure in WebSocket handling", exception);
             }
         })
@@ -104,18 +103,18 @@ class EventsIntegrationTest {
             this.latch = new CountDownLatch(expected);
         }
 
-        @Override public Type getPayloadType(StompHeaders headers) {
+        @Override @NonNull public Type getPayloadType(@NonNull StompHeaders headers) {
             return EventEnvelope.class;
         }
 
-        @Override public void handleFrame(StompHeaders headers, Object payload) {
+        @Override public void handleFrame(@NonNull StompHeaders headers, Object payload) {
             log.info("Received frame {}", payload);
             frames.add(String.valueOf(payload));
             latch.countDown();
         }
 
-        boolean await(long timeout, TimeUnit unit) throws InterruptedException {
-            return latch.await(timeout, unit);
+        boolean await() throws InterruptedException {
+            return latch.await(5, TimeUnit.SECONDS);
         }
 
         List<String> drainAll() {
@@ -131,8 +130,8 @@ class EventsIntegrationTest {
         CollectingHandler h1 = new CollectingHandler(1);
         CollectingHandler h2 = new CollectingHandler(1);
 
-        StompSession.Subscription sub1 = s1.subscribe("/topic/case/created", h1);
-        StompSession.Subscription sub2 = s2.subscribe("/topic/case/created", h2);
+        s1.subscribe(destination, h1);
+        s2.subscribe(destination, h2);
 
         return new Duo(h1, h2);
     }
@@ -144,15 +143,15 @@ class EventsIntegrationTest {
         StompSession s1 = connect();
         StompSession s2 = connect();
         try {
-            String dest = "/topic/case/created";
+            String dest = "/topic/case/updated";
             Duo duo = subscribeTwo(s1, s2, dest);
 
             // Publish internally via the KafkaEventPublisher (goes through Kafka → listener → WS)
-            publisher.publishEvent(new CaseCreated(this, "CASE-1", java.time.Instant.now()));
+            publisher.publishEvent(new CaseUpdated(this, "CASE-1", java.time.Instant.now(), Map.of("testProperty","updatedValue")));
 
             // Both clients must receive
-            boolean ok1 = duo.a.await(5, TimeUnit.SECONDS);
-            boolean ok2 = duo.b.await(5, TimeUnit.SECONDS);
+            boolean ok1 = duo.a.await();
+            boolean ok2 = duo.b.await();
             assertThat(ok1).as("client 1 received frame").isTrue();
             assertThat(ok2).as("client 2 received frame").isTrue();
 
@@ -178,8 +177,8 @@ class EventsIntegrationTest {
             String url = String.format("http://localhost:%d/api/events/create/CASE-2", port);
             rest.postForEntity(url, null, Void.class);
 
-            boolean ok1 = duo.a.await(5, TimeUnit.SECONDS);
-            boolean ok2 = duo.b.await(5, TimeUnit.SECONDS);
+            boolean ok1 = duo.a.await();
+            boolean ok2 = duo.b.await();
             assertThat(ok1).as("client 1 received frame").isTrue();
             assertThat(ok2).as("client 2 received frame").isTrue();
 

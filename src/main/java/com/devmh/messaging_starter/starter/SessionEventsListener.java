@@ -11,7 +11,7 @@ import java.security.Principal;
 import java.util.Map;
 
 @Component
-class SessionEventsListener implements ApplicationListener<AbstractSubProtocolEvent>, org.springframework.messaging.support.ChannelInterceptor {
+public class SessionEventsListener implements ApplicationListener<AbstractSubProtocolEvent>, org.springframework.messaging.support.ChannelInterceptor {
     private final SessionRegistry registry;
     private final PrincipalResolver resolver;
 

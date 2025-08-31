@@ -1,5 +1,6 @@
 package com.devmh.messaging.interceptors;
 
+import lombok.NonNull;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -12,8 +13,8 @@ import java.util.Map;
 @Component
 public class WsHandshakeInterceptor implements HandshakeInterceptor {
     @Override
-    public boolean beforeHandshake(ServerHttpRequest req, ServerHttpResponse res,
-                                   WebSocketHandler wsHandler, Map<String,Object> attrs) {
+    public boolean beforeHandshake(@NonNull ServerHttpRequest req, @NonNull ServerHttpResponse res,
+                                   @NonNull WebSocketHandler wsHandler, @NonNull Map<String,Object> attrs) {
         if (req instanceof ServletServerHttpRequest sreq) {
             var http = sreq.getServletRequest();
             String dn = http.getHeader("x-ssl-client-dn");
@@ -23,6 +24,6 @@ public class WsHandshakeInterceptor implements HandshakeInterceptor {
         }
         return true;
     }
-    @Override public void afterHandshake(ServerHttpRequest r, ServerHttpResponse s,
-                                         WebSocketHandler h, Exception ex) {}
+    @Override public void afterHandshake(@NonNull ServerHttpRequest r, @NonNull ServerHttpResponse s,
+                                         @NonNull WebSocketHandler h, Exception ex) {}
 }

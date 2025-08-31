@@ -41,8 +41,7 @@ public class EventBus {
                         @Payload EventEnvelope envelope) {
         log.info("Event bus received Kafka event: {} from topic: {}", envelope, topic);
         AppEventType type = AppEventType.fromTopic(topic);
-        // String destination = type != null ? type.destination : wsBase + "/generic";
-        String destination = "/topic/case/created";
+        String destination = type != null ? type.destination : wsBase + "/generic";
         log.info("Event bus fanning out to subscribed WebSockets: topic={}, message={}, destination={}", topic, envelope, destination);
         ws.convertAndSend(destination, envelope);
         log.info("Fan-out complete");
