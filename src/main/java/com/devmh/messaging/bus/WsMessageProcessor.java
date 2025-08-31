@@ -24,9 +24,8 @@ public class WsMessageProcessor implements Processor {
 
     @Override
     public void process(Exchange exchange) {
-        log.warn("PROCESSING THE MESSAGE");
         EventEnvelope env = exchange.getIn().getBody(EventEnvelope.class);
-        log.warn("PROCESSING ENVELOPE: {}", env);
+        log.warn("Camel processing exchange with envelope: {}", env);
         String topic = exchange.getIn().getHeader(KafkaConstants.TOPIC, String.class);
         AppEventType type = AppEventType.fromTopic(topic);
 

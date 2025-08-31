@@ -3,8 +3,7 @@ package com.devmh.messaging.config;
 import com.devmh.messaging.interceptors.WsHandshakeHandler;
 import com.devmh.messaging.interceptors.WsHandshakeInterceptor;
 import lombok.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -15,6 +14,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+@Slf4j
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
@@ -43,11 +43,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureClientOutboundChannel(ChannelRegistration reg) {
         // add auth check interceptor
         reg.interceptors(new ChannelInterceptor() {
-            final Logger log = LoggerFactory.getLogger("WsOutbound");
-
             @Override
             public Message<?> preSend(@NonNull Message<?> m, @NonNull MessageChannel c) {
-                log.info("WS OUT {} {} {}", m, m.getHeaders().get("simpDestination"), c);
+                log.info("WebSocket outbound: {} {} {}", m, m.getHeaders().get("simpDestination"), c);
                 return m;
             }
         });
