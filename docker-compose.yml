@@ -19,29 +19,10 @@ services:
     ports:
       - "9092:9092"
     healthcheck:
-      # simple “broker responds” check
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
       interval: 5s
       timeout: 3s
       retries: 20
-
-  #topic-init:
-  #  image: bitnami/kafka:3.7
-  #  container_name: topic-init
-  #  depends_on:
-  #    kafka:
-  #      condition: service_healthy
-  #  entrypoint: ["/bin/bash", "-lc"]
-  #  command: |
-  #    '
-  #    set -e
-  #    for t in case.created case.locked case.unlocked case.updated; do
-  #      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists \
-  #        --topic "$t" --partitions 1 --replication-factor 1
-  #    done
-  #    echo "Topics ready."
-  #    '
-  #  restart: "no"
 
   app1:
     # If you have a Dockerfile in the repo:
@@ -53,7 +34,7 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - SERVER_PORT=8081
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      # If you use your Camel starter/properties, add them here too:
+      # Camel starter/properties:
       # - EVENTBUS_BOOTSTRAP_SERVERS=kafka:9092
     ports:
       - "8081:8081"
