@@ -1,7 +1,8 @@
-package com.devmh.messaging.bus;
+package com.devmh.messaging.bus.camel;
 
 import com.devmh.messaging.events.AppEventType;
 import com.devmh.messaging.events.EventEnvelope;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.*;
 import org.apache.camel.component.kafka.KafkaConstants;
@@ -12,20 +13,16 @@ import org.springframework.stereotype.Component;
 import java.security.Principal;
 
 @Slf4j
-@Component("wsMessageProcessor")
-public class WsMessageProcessor implements Processor {
+@Component("wsFanoutProcessor")
+@RequiredArgsConstructor
+public class WsFanoutProcessor implements Processor {
     private final SimpMessagingTemplate ws;
     private final SimpUserRegistry userRegistry;
-
-    public WsMessageProcessor(SimpMessagingTemplate ws, SimpUserRegistry reg) {
-        this.ws = ws;
-        this.userRegistry = reg;
-    }
 
     @Override
     public void process(Exchange exchange) {
         EventEnvelope env = exchange.getIn().getBody(EventEnvelope.class);
-        log.warn("Camel processing exchange with envelope: {}", env);
+        log.info("Camel processing exchange with envelope: {}", env);
         String topic = exchange.getIn().getHeader(KafkaConstants.TOPIC, String.class);
         AppEventType type = AppEventType.fromTopic(topic);
 

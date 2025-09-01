@@ -29,11 +29,13 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     implementation 'org.projectlombok:lombok:1.18.30'
 
+    implementation 'org.apache.camel.springboot:camel-spring-boot:4.5.0'
     implementation 'org.apache.camel.springboot:camel-spring-boot-starter:4.5.0'
     implementation 'org.apache.camel.springboot:camel-log-starter:4.5.0'
+    implementation 'org.apache.camel.springboot:camel-kafka-starter:4.5.0'
     implementation 'org.apache.camel:camel-endpointdsl:4.5.0'
     implementation 'org.apache.camel:camel-jackson:4.5.0'
-    implementation 'org.apache.camel:camel-kafka:4.5.0'
+    //implementation 'org.apache.camel:camel-kafka:4.5.0'
 
     //testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0' // Or the latest version
     //testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0' // Or the latest version
