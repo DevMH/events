@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: kafka
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=1
+    ports:
+      - "9092:9092"
+    healthcheck:
+      # simple “broker responds” check
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  #topic-init:
+  #  image: bitnami/kafka:3.7
+  #  container_name: topic-init
+  #  depends_on:
+  #    kafka:
+  #      condition: service_healthy
+  #  entrypoint: ["/bin/bash", "-lc"]
+  #  command: |
+  #    '
+  #    set -e
+  #    for t in case.created case.locked case.unlocked case.updated; do
+  #      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists \
+  #        --topic "$t" --partitions 1 --replication-factor 1
+  #    done
+  #    echo "Topics ready."
+  #    '
+  #  restart: "no"
+
+  app1:
+    # If you have a Dockerfile in the repo:
+    build:
+      context: .
+    image: ${APP_IMAGE:-fanout-app}
+    container_name: app1
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8081
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # If you use your Camel starter/properties, add them here too:
+      # - EVENTBUS_BOOTSTRAP_SERVERS=kafka:9092
+    ports:
+      - "8081:8081"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+  app2:
+    image: ${APP_IMAGE:-fanout-app}
+    container_name: app2
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8082
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    ports:
+      - "8082:8082"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  default:
+    name: fanout-net
