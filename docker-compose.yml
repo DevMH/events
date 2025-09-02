@@ -25,7 +25,6 @@ services:
       retries: 20
 
   app1:
-    # If you have a Dockerfile in the repo:
     build:
       context: .
     image: ${APP_IMAGE:-fanout-app}
